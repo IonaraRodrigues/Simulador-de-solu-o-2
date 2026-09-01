@@ -76,20 +76,20 @@
             <div id="manual-txt" class="manual-content" role="region">
                 <ul>
                     <li><strong>Agitação Térmica:</strong> Ao aquecer, a energia cinética molecular aumenta, acelerando todas as partículas.</li>
-                    <li><strong>Solvatação Real:</strong> Repare que moléculas de água orbitam e cercam os íons livres ($Na^+$ e $Cl^-$), impedindo-os de se recombinarem.</li>
-                    <li><strong>Precipitação e Cristalização:</strong> Ao saturar, a água não consegue mais isolar os íons. Eles se unem geometricamente no fundo, formando a malha estável de $NaCl$.</li>
+                    <li><strong>Solvatação Real:</strong> Repare que moléculas de água orbitam e cercam os íons livres (Cl- e Na+), impedindo-os de se recombinarem.</li>
+                    <li><strong>Precipitação e Cristalização:</strong> Ao saturar, a água não consegue mais isolar os íons. Eles se unem geometricamente no fundo, formando a malha estável de NaCl.</li>
                 </ul>
             </div>
         </section>
 
         <section class="legenda">
             <div class="legenda-item"><span class="esfera agua-m"></span> Molécula Solvente (H_2O)</div>
-            <div class="legenda-item"><span class="esfera na"></span> Íon Sódio (Na^+)</div>
-            <div class="legenda-item"><span class="esfera cl"></span> Íon Cloro (Cl^-)</div>
+            <div class="legenda-item"><span class="esfera na"></span> Íon Sódio (Na+)</div>
+            <div class="legenda-item"><span class="esfera cl"></span> Íon Cloro (Cl-)</div>
             <div class="legenda-item"><span class="esfera nacl"></span> Sal Precipitado (NaCl)</div>
         </section>
 
-        <div class="status-box" id="estado-solucao" aria-live="polite">Água Pura</div>
+        <div class="status-box" id="estado-solucao" aria-live="polite">Água</div>
 
         <div class="copo-container">
             <canvas id="aquario"></canvas>
@@ -119,7 +119,7 @@
         let colheres = 0;
         let aquecido = false;
         let particulas = [];
-        const LIMITE = 3;
+        const LIMITE = 5;
 
         class Particula {
             constructor(x, y, tipo, parId = null) {
@@ -252,10 +252,10 @@
 
         function atualizarInterface() {
             let texto = "";
-            if (colheres === 0) texto = aquecido ? "Água Quente (Solvente Puro)" : "Água em Temp. Ambiente (Solvente Puro)";
+            if (colheres === 0) texto = aquecido ? "Água Quente (Solvente)" : "Água em Temperatura Ambiente (Solvente)";
             else if (colheres < LIMITE) texto = aquecido ? "Solução Insaturada Aquecida" : "Solução Insaturada (Íons estáveis)";
             else if (colheres === LIMITE) texto = aquecido ? "Solução Insaturada (Capacidade expandida)" : "Solução Perfeitamente Saturada";
-            else texto = aquecido ? "Solução Supersaturada Estável" : "Solução Saturada com Corpo de Fundo (Precipitado)";
+            else texto = aquecido ? "Solução Supersaturada Instável" : "Solução Saturada com Corpo de Fundo (Precipitado)";
 
             document.getElementById('estado-solucao').innerText = texto;
             document.getElementById('contador-colheres').innerText = `Colheres de Sal: ${colheres} ${aquecido ? '(Aquecido)' : ''}`;
