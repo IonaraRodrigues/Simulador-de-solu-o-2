@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaturoMetro Pro: Simulação Realista</title>
+    <style>
+        :root {
+            --cor-principal: #2c3e50;
+            --cor-bg: #f1f2f6;
+            --cor-agua: #74b9ff;
+            --cor-agua-quente: #ff9f43;
+            --cor-saturada: #2e86de;
+            
+            /* Cores Químicas Reais */
+            --cor-na: #ff4757; /* Íon Sódio (Pequeno, Cátion) */
+            --cor-cl: #2ed573; /* Íon Cloro (Maior, Ânion) */
+            --cor-nacl: #ffa502; /* Cristal reticular */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: var(--cor-bg); color: var(--cor-principal); padding: 10px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 600px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+        
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+        .subtitulo { font-size: 0.9rem; text-align: center; margin-bottom: 15px; color: #57606f; }
+
+        /* 📑 MANUAL RETRÁTIL */
+        .manual-container { margin-bottom: 15px; border: 1px solid #ced6e0; border-radius: 8px; overflow: hidden; }
+        .manual-header { background: #e4e7eb; padding: 12px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; width: 100%; border: none; font-size: 0.95rem; color: var(--cor-principal); }
+        .manual-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: #f8f9fa; }
+        .manual-content.aberto { max-height: 300px; padding: 12px; overflow-y: auto; }
+        .manual-content li { margin-bottom: 5px; font-size: 0.85rem; list-style-position: inside; }
+
+        /* 🔬 LEGENDA */
+        .legenda { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.8rem; border: 1px solid #e4e7eb; }
+        .legenda-item { display: flex; align-items: center; gap: 6px; }
+        .esfera { border-radius: 50%; display: inline-block; }
+        .esfera.agua-m { width: 8px; height: 8px; background: #a4b0be; border: 2px solid #74b9ff; }
+        .esfera.na { width: 8px; height: 8px; background: var(--cor-na); }
+        .esfera.cl { width: 11px; height: 11px; background: var(--cor-cl); }
+        .esfera.nacl { width: 10px; height: 10px; background: var(--cor-nacl); border-radius: 2px; }
+
+        /* 🧪 BÉQUER E VISUALIZAÇÃO */
+        .status-box { font-size: 1rem; font-weight: bold; margin: 10px 0; padding: 10px; border-radius: 8px; background: #dfe6e9; text-align: center; }
+        .copo-container { position: relative; width: 220px; height: 240px; margin: 15px auto; border: 6px solid #b2bec3; border-top: none; border-radius: 0 0 24px 24px; background: #fff; overflow: hidden; }
+        
+        canvas { position: absolute; bottom: 0; left: 0; width: 100%; height: 85%; background: var(--cor-agua); transition: background 0.5s ease; }
+
+        .info-tecnica { font-size: 0.9rem; font-weight: 600; text-align: center; margin-bottom: 15px; }
+
+        /* 🎮 CONTROLES */
+        .grid-botoes { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        @media (min-width: 420px) { .grid-botoes { grid-template-columns: repeat(2, 1fr); } .btn-full { grid-column: span 2; } }
+
+        button { padding: 12px; font-size: 0.9rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; display: flex; justify-content: center; align-items: center; gap: 5px; }
+        button:active { transform: scale(0.98); }
+        
+        .btn-add { background-color: #00b894; }
+        .btn-aquecer { background-color: #e67e22; }
+        .btn-resfriar { background-color: #2ecc71; }
+        .btn-limpar { background-color: #d63031; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+    </style>
+</head>
+<body>
+
+    <main class="container">
+        <h1>SaturoMetro Cinético</h1>
+        <p class="subtitulo">Simulação Termodinâmica em Tempo Real</p>
+
+        <section class="manual-container" aria-label="Manual">
+            <button class="manual-header" onclick="toggleManual()" id="manual-btn" aria-expanded="false">
+                <span>📖 Manual de Dinâmica Molecular</span> <span>▼</span>
+            </button>
+            <div id="manual-txt" class="manual-content" role="region">
+                <ul>
+                    <li><strong>Agitação Térmica:</strong> Ao aquecer, a energia cinética molecular aumenta, acelerando todas as partículas.</li>
+                    <li><strong>Solvatação Real:</strong> Repare que moléculas de água orbitam e cercam os íons livres ($Na^+$ e $Cl^-$), impedindo-os de se recombinarem.</li>
+                    <li><strong>Precipitação e Cristalização:</strong> Ao saturar, a água não consegue mais isolar os íons. Eles se unem geometricamente no fundo, formando a malha estável de $NaCl$.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="legenda">
+            <div class="legenda-item"><span class="esfera agua-m"></span> Molécula Solvente ($H_2O$)</div>
+            <div class="legenda-item"><span class="esfera na"></span> Íon Sódio ($Na^+$)</div>
+            <div class="legenda-item"><span class="esfera cl"></span> Íon Cloro ($Cl^-$)</div>
+            <div class="legenda-item"><span class="esfera nacl"></span> Sal Precipitado ($NaCl$)</div>
+        </section>
+
+        <div class="status-box" id="estado-solucao" aria-live="polite">Água Pura</div>
+
+        <div class="copo-container">
+            <canvas id="aquario"></canvas>
+        </div>
+
+        <div class="info-tecnica" id="contador-colheres">Colheres de Sal: 0</div>
+
+        <nav class="grid-botoes">
+            <button class="btn-add btn-full" onclick="adicionarSal()">➕ Adicionar Colher de Sal</button>
+            <button class="btn-aquecer" onclick="alterarTemperatura(true)">🔥 Aquecer Sistema</button>
+            <button class="btn-resfriar" onclick="alterarTemperatura(false)">❄️ Esfriar Sistema</button>
+            <button class="btn-limpar btn-full" onclick="reiniciar()">🔄 Resetar Experimento</button>
+        </nav>
+    </main>
+
+    <div id="aviso-voz" class="sr-only" aria-live="assertive"></div>
+
+    <script>
+        const canvas = document.getElementById('aquario');
+        const ctx = canvas.getContext('2d');
+
+        function ajustarCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        }
+
+        let colheres = 0;
+        let aquecido = false;
+        let particulas = [];
+        const LIMITE = 3;
+
+        class Particula {
+            constructor(x, y, tipo, parId = null) {
+                this.x = x;
+                this.y = y;
+                this.tipo = tipo;
+                this.parId = parId;
+                this.setPropriedades();
+                this.definirVelocidade();
+            }
+
+            setPropriedades() {
+                if (this.tipo === 'H2O') { this.r = 3; this.cor = '#a4b0be'; }
+                if (this.tipo === 'Na') { this.r = 4; this.cor = '#ff4757'; }
+                if (this.tipo === 'Cl') { this.r = 5.5; this.cor = '#2ed573'; }
+                if (this.tipo === 'NaCl') { this.r = 5; this.cor = '#ffa502'; }
+            }
+
+            definirVelocidade() {
+                let base = aquecido ? 2.5 : 1.0;
+                if (this.tipo === 'NaCl') base *= 0.15;
+                this.vx = (Math.random() - 0.5) * base;
+                this.vy = (Math.random() - 0.5) * base;
+            }
+
+            atualizar() {
+                if (this.tipo === 'NaCl') {
+                    this.vy += 0.05;
+                    if (this.y > canvas.height - 12) {
+                        this.vy = 0;
+                        this.vx *= 0.5;
+                    }
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x - this.r < 0 || this.x + this.r > canvas.width) this.vx *= -1;
+                if (this.y - this.r < 0 || this.y + this.r > canvas.height) this.vy *= -1;
+                
+                if (this.y + this.r > canvas.height) this.y = canvas.height - this.r;
+            }
+
+            desenhar() {
+                ctx.beginPath();
+                if (this.tipo === 'NaCl') {
+                    ctx.rect(this.x - this.r, this.y - this.r, this.r * 2, this.r * 2);
+                } else {
+                    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                }
+                ctx.fillStyle = this.cor;
+                ctx.fill();
+                ctx.closePath();
+
+                if ((this.tipo === 'Na' || this.tipo === 'Cl') && !aquecido) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.r + 5, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function inicializarAgua() {
+            particulas = [];
+            ajustarCanvas();
+            for (let i = 0; i < 35; i++) {
+                particulas.push(new Particula(Math.random() * canvas.width, Math.random() * canvas.height, 'H2O'));
+            }
+        }
+
+        function adicionarSal() {
+            colheres++;
+            let maxValidos = aquecido ? LIMITE + 2 : LIMITE;
+
+            if (colheres <= maxValidos) {
+                for (let i = 0; i < 6; i++) {
+                    let rx = Math.random() * canvas.width;
+                    let ry = Math.random() * (canvas.height * 0.6);
+                    particulas.push(new Particula(rx, ry, 'Na'));
+                    particulas.push(new Particula(rx + 8, ry, 'Cl'));
+                }
+            } else {
+                for (let i = 0; i < 8; i++) {
+                    let rx = Math.random() * canvas.width;
+                    let ry = Math.random() * 30;
+                    particulas.push(new Particula(rx, ry, 'NaCl'));
+                }
+            }
+            atualizarInterface();
+        }
+
+        function alterarTemperatura(status) {
+            aquecido = status;
+            canvas.style.background = aquecido ? 'var(--cor-agua-quente)' : 'var(--cor-agua)';
+            
+            particulas.forEach(p => p.definirVelocidade());
+            
+            if (aquecido) {
+                particulas = particulas.map(p => {
+                    if (p.tipo === 'NaCl') {
+                        setTimeout(() => {
+                            particulas.push(new Particula(p.x, p.y, 'Cl'));
+                        }, 50);
+                        return new Particula(p.x, p.y, 'Na');
+                    }
+                    return p;
+                });
+            } else {
+                if (colheres > LIMITE) {
+                    let excesso = colheres - LIMITE;
+                    let removidos = 0;
+                    particulas = particulas.filter(p => {
+                        if ((p.tipo === 'Na' || p.tipo === 'Cl') && removidos < (excesso * 12)) {
+                            removidos++;
+                            if (removidos % 2 === 0) {
+                                setTimeout(() => {
+                                    particulas.push(new Particula(p.x, canvas.height - 20, 'NaCl'));
+                                }, 10);
+                            }
+                            return false;
+                        }
+                        return true;
+                    });
+                }
+            }
+            atualizarInterface();
+        }
+
+        function atualizarInterface() {
+            let texto = "";
+            if (colheres === 0) texto = aquecido ? "Água Quente (Solvente Puro)" : "Água em Temp. Ambiente (Solvente Puro)";
+            else if (colheres < LIMITE) texto = aquecido ? "Solução Insaturada Aquecida" : "Solução Insaturada (Íons estáveis)";
+            else if (colheres === LIMITE) texto = aquecido ? "Solução Insaturada (Capacidade expandida)" : "Solução Perfeitamente Saturada";
+            else texto = aquecido ? "Solução Supersaturada Estável" : "Solução Saturada com Corpo de Fundo (Precipitado)";
+
+            document.getElementById('estado-solucao').innerText = texto;
+            document.getElementById('contador-colheres').innerText = `Colheres de Sal: ${colheres} ${aquecido ? '(Aquecido)' : ''}`;
+            document.getElementById('aviso-voz').innerText = `Status do sistema: ${texto}`;
+        }
+
+        function toggleManual() {
+            const content = document.getElementById('manual-txt');
+            content.classList.toggle('aberto');
+            document.getElementById('manual-btn').setAttribute('aria-expanded', content.classList.contains('aberto'));
+        }
+
+        function reiniciar() {
+            colheres = 0;
+            aquecido = false;
+            canvas.style.background = 'var(--cor-agua)';
+            inicializarAgua();
+            atualizarInterface();
+        }
+
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particulas.forEach(p => {
+                p.atualizar();
+                p.desenhar();
+            });
+            requestAnimationFrame(loop);
+        }
+
+        window.addEventListener('resize', ajustarCanvas);
+        inicializarAgua();
+        loop();
+    </script>
+</body>
+</html>
