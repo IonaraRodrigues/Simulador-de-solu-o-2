@@ -255,7 +255,7 @@
             if (colheres === 0) texto = aquecido ? "Água Quente (Solvente Puro)" : "Água em Temp. Ambiente (Solvente Puro)";
             else if (colheres < LIMITE) texto = aquecido ? "Solução Insaturada Aquecida" : "Solução Insaturada (Íons estáveis)";
             else if (colheres === LIMITE) texto = aquecido ? "Solução Insaturada (Capacidade expandida)" : "Solução Perfeitamente Saturada";
-            else texto = aquecido ? "Solução Supersaturada Estável" : "Solução Saturada com Corpo de Fundo (Precipitado)";
+            else texto = aquecido ? "Solução Supersaturada Instável" : "Solução Saturada com Corpo de Fundo (Precipitado)";
 
             document.getElementById('estado-solucao').innerText = texto;
             document.getElementById('contador-colheres').innerText = `Colheres de Sal: ${colheres} ${aquecido ? '(Aquecido)' : ''}`;
